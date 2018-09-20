@@ -10,3 +10,5 @@ Map generator with hills and craters. The idea is to create a map generator for 
 
 
 **Don't use this mod on any server!** It is in a very experimental stage of development.
+
+![Presentation image of Crater MG](screenshot.png)
