@@ -2,6 +2,8 @@
 
 Map generator with hills and craters. The idea is to create a map generator for space mintest games.
 
+**Don't use this mod on any server!** It is in a very experimental stage of development.
+
 ![Presentation image of Crater MG](screenshot.png)
 
 **Version**: Proof of concept
@@ -10,7 +12,7 @@ Map generator with hills and craters. The idea is to create a map generator for 
 
 **License**: LGPL v2.1
 
-**Don't use this mod on any server!** It is in a very experimental stage of development.
+**See also**: [Minetest forum thread](https://forum.minetest.net/viewtopic.php?t=20840)
 
 ## Test it
 
