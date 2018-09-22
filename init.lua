@@ -21,10 +21,10 @@ local c_dust = minetest.get_content_id("default:sand")
 local c_sediment = minetest.get_content_id("default:sandstone")
 local c_vacuum  = minetest.get_content_id("air")
 
-local fill_age = 60
-local wipe_age = 100
+local fill_age = 10
+local wipe_age = 20
 
-local craternumber = 0.1/(80*80)
+local craternumber = 0.5/(80*80)
 
 local marenoiseparam = {
 	offset = 0,
@@ -86,9 +86,10 @@ end
 -- Crater probability per radius
 local probacurve = {
 	{ r = 5, p = 0.0 },
-	{ r = 10, p = 1.0 },
-	{ r = 30, p = 0.05 },
-	{ r = 80, p = 0.001 },
+	{ r = 7, p = 1.0 },
+	{ r = 20, p = 0.005 },
+	{ r = 80, p = 0.0002 },
+	{ r = 350, p = 0.0001 },
 	{ r = 400, p = 0.0 },
 }
 
@@ -125,6 +126,14 @@ for _, scale in pairs(scales) do
 end
 
 local mapseed = 0
+
+local function get_crater_hole_depth(crater, d2)
+	return crater.depth * (crater.holeR2 - d2) / crater.holeR2
+end
+
+local function get_crater_fill_depth(crater, d2)
+	return get_crater_hole_depth(crater, d2) * math.min(fill_age, crater.age)/fill_age
+end
 
 -- On map gen init, get map key
 minetest.register_on_mapgen_init(function(mapgen_params)
@@ -199,25 +208,20 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 								totalR = radius,
 								totalR2 = radius * radius,
 								depth = radius * (math.random() * 0.3 + 0.3),
-								age = radius * (math.random()*0.7 + 0.3),
+								age = math.sqrt(radius) * (math.random()*0.7 + 0.3),
 							}
-							-- Check crater center is not on hills
-							if us_hillsmap[1 + math.floor(crater.x/us_scale) - us_noise_minp.x
-							 	+ (math.floor(crater.z/us_scale) - us_noise_minp.y)
-								* (us_noise_maxp.x - us_noise_minp.x)] < -10 then
-								-- Check crater intersects with map chunck
-								crater.minp = { x = crater.x - crater.totalR, z = crater.z - crater.totalR }
-								crater.maxp = { x = crater.x + crater.totalR, z = crater.z + crater.totalR }
+							-- Check crater intersects with map chunck
+							crater.minp = { x = crater.x - crater.totalR, z = crater.z - crater.totalR }
+							crater.maxp = { x = crater.x + crater.totalR, z = crater.z + crater.totalR }
 
-								crater.holeR = 0.8 * radius - 3
-								crater.holeR2 = crater.holeR * crater.holeR
+							crater.holeR = 0.8 * radius - 3
+							crater.holeR2 = crater.holeR * crater.holeR
 
-								if crater.maxp.x > minp.x and
-								   crater.minp.x < maxp.x and
-								   crater.maxp.z > minp.z and
-								   crater.minp.z < maxp.z then
-									table.insert(craters, crater)
-								end
+							if crater.maxp.x > minp.x and
+							   crater.minp.x < maxp.x and
+							   crater.maxp.z > minp.z and
+							   crater.minp.z < maxp.z then
+								table.insert(craters, crater)
 							end
 						end
 					end
@@ -227,6 +231,45 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 		-- Sort by age
 		table.sort(craters, function(a,b) return a.age>b.age end)
+
+		-- Compute impact heights and remove impacts on hills
+		local index = 1
+		while index <= #craters do
+
+			local crater = craters[index]
+
+			for oldindex = index-1, 1, -1 do
+				local oldcrater = craters[oldindex]
+				if crater.x>=oldcrater.minp.x and crater.x<=oldcrater.maxp.x and
+				   crater.z>=oldcrater.minp.z and crater.z<=oldcrater.maxp.z
+				then
+					local d2 = (oldcrater.x-crater.x) * (oldcrater.x-crater.x) +
+						(oldcrater.z-crater.z) * (oldcrater.z-crater.z)
+					if d2 < oldcrater.holeR2 then
+						crater.y = oldcrater.y
+							- get_crater_hole_depth(oldcrater, d2)
+							+ get_crater_fill_depth(oldcrater, d2)
+						goto found
+					end
+				end
+			end
+
+			::found::
+
+			-- Check crater center is not on hills (only if not yet in a crater)
+			if crater.y == nil and
+				us_hillsmap[1 + math.floor(crater.x/us_scale) - us_noise_minp.x
+				+ (math.floor(crater.z/us_scale) - us_noise_minp.y)
+				* (us_noise_maxp.x - us_noise_minp.x)] < -10 then
+				crater.y = 0
+			end
+
+			if crater.y == nil then
+				table.remove(craters, index)
+			else
+				index = index + 1
+			end
+		end
 
 		stopcounter('crater inventory')
 	end
@@ -251,11 +294,13 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 		for x = minp.x, maxp.x do
 			local hillsheight = hillsmap[perlin_index] + edgemap[perlin_index] * 10
 			local mareheight = maremap[perlin_index]
-			local rockheight, dustheight, sedimentheight
-			local depth
-			
+			local rockheight, fillheight, edgeheight
+			local holeheight, oldheight
+
 			rockheight = math.max(mareheight, hillsheight)
-			sedimentheight = mareheight
+			fillheight = mareheight
+			edgeheight = mareheight
+
 			if craters then
 				startcounter('crater generation')
 				for _, crater in pairs(craters) do
@@ -267,25 +312,28 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 						if d2 <= crater.totalR2 then
 							-- Hole
-							depth = crater.depth*(crater.holeR2-d2)/crater.holeR2
+							holeheight = mareheight + crater.y
+								- get_crater_hole_depth(crater, d2)
 
 							-- Everything inside hole is removed
-							rockheight = math.min(rockheight, mareheight-depth)
-							sedimentheight = math.min(sedimentheight, mareheight-depth)
+							rockheight = math.min(rockheight, holeheight)
+							fillheight = math.min(fillheight, holeheight)
 
+							-- Fill with dust according to age
 							if d2 <= crater.holeR2 then
-								-- Fill with dust according to age
-								sedimentheight = sedimentheight + depth *
-									(math.min(fill_age, crater.age) / fill_age)
+								fillheight = fillheight + get_crater_fill_depth(crater, d2)
+								edgeheight = math.min(edgeheight, fillheight)
+							else
+								edgeheight = math.min(edgeheight, holeheight)
 							end
 
 							-- Edge
 							if d2 >= crater.holeR2 then
-								sedimentheight = sedimentheight +
-									(math.max(0, wipe_age-crater.age) / wipe_age) *
-									math.min(
-										crater.depth*(d2-crater.holeR2)/crater.holeR2,
-										(edgemap[perlin_index]+2)*((crater.totalR2 - crater.holeR2)/(1 + d2 - crater.holeR2) - 1))
+								edgeheight = edgeheight
+									+ math.max(0, wipe_age - crater.age)
+									/ wipe_age * math.min(
+									crater.depth * (d2 - crater.holeR2) / crater.holeR2,
+									(edgemap[perlin_index]+2) * ((crater.totalR2 - crater.holeR2) / (1 + d2 - crater.holeR2) - 1))
 							end
 						end
 					end
@@ -298,9 +346,9 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 			for y = minp.y, maxp.y do
 				if y < rockheight then
 					data[vi] = c_rock
-				elseif y < sedimentheight then
+				elseif y < math.max(edgeheight, fillheight) then
 					data[vi] = c_sediment
-				elseif y < math.max(rockheight, sedimentheight) + 1 then
+				elseif y < math.max(rockheight, edgeheight, fillheight) + 1 then
 					data[vi] = c_dust
 				else
 					data[vi] = c_vacuum
