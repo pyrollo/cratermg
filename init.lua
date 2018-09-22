@@ -124,6 +124,21 @@ for _, scale in pairs(scales) do
 	if maxscalesize < scale.mapsize then maxscalesize = scale.mapsize end
 end
 
+local mapseed = 0
+
+-- On map gen init, get map key
+minetest.register_on_mapgen_init(function(mapgen_params)
+		if mapgen_params.mgname ~= "singlenode" then
+			minetest.log("warning", "[cratermg] Mapgen should be set to \"singlenode\"")
+		end
+		-- Note on map seed: Lua does not seem to be able to correctly handle 64
+		-- bits integer so the 3 last digits are rounded. Same if we add small
+		-- numbers to the 64bits key, rounded result will not include small
+		-- number adition. So key is restricted to (inaccurate) 32 lower bits
+		mapseed = mapgen_params.seed % (2^32)
+	end
+)
+
 -- Map generation
 minetest.register_on_generated(function (minp, maxp, blockseed)
 	local tstart = os.clock()
@@ -174,8 +189,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 			        math.ceil(maxp.x / scale.mapsize) do
 				for z = math.floor(minp.z / scale.mapsize) - 1,
 				        math.ceil(maxp.z / scale.mapsize) do
-					math.randomseed(scale.zseed * z + x + scale.seed) -- Sector seed
-
+					math.randomseed(mapseed + scale.zseed * z + x + scale.seed) -- Sector seed
 					for _ = 1, craternumber * scale.nummult do
 						local radius = scale.rmin  + (scale.rmax - scale.rmin) * math.random()
 						if math.random() * scale.maxproba < proba(radius) then
