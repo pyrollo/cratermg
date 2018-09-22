@@ -252,7 +252,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 			local hillsheight = hillsmap[perlin_index] + edgemap[perlin_index] * 10
 			local mareheight = maremap[perlin_index]
 			local rockheight, dustheight, sedimentheight
-
+			local depth
+			
 			rockheight = math.max(mareheight, hillsheight)
 			sedimentheight = mareheight
 			if craters then
