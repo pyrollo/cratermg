@@ -35,7 +35,7 @@ local marenoiseparam = {
 	persist = 0.5
 }
 
-local hillsnoiseparam = {
+local hillnoiseparam = {
 	offset = -10,
 	scale = 20,
 	spread = {x=256, y=256, z=256},
@@ -148,27 +148,39 @@ minetest.register_on_mapgen_init(function(mapgen_params)
 	end
 )
 
+
+-- Reused mapgen vars
+local mapdata = {}
+local marenoise, hillnoise, edgenoise
+local maremap = {}
+local hillmap = {}
+local edgemap = {}
+
 -- Map generation
 minetest.register_on_generated(function (minp, maxp, blockseed)
 	local tstart = os.clock()
 	initcounters()
 	startcounter('total')
 
-	local gen_lengths = {
+	local chulens3d = {
 		x=maxp.x - minp.x + 1,
 		y=maxp.y - minp.y + 1,
 		z=maxp.z - minp.z + 1}
 
-	local maremap = minetest.get_perlin_map(marenoiseparam, gen_lengths):get2dMap_flat({x=minp.x,y=minp.z})
-	local hillsmap = minetest.get_perlin_map(hillsnoiseparam, gen_lengths):get2dMap_flat({x=minp.x,y=minp.z})
-	local edgemap = minetest.get_perlin_map(edgenoiseparam, gen_lengths):get2dMap_flat({x=minp.x,y=minp.z})
+	marenoise = marenoise  or minetest.get_perlin_map(marenoiseparam, chulens3d)
+	hillnoise = hillnoise or minetest.get_perlin_map(hillnoiseparam, chulens3d)
+	edgenoise = edgenoise  or minetest.get_perlin_map(edgenoiseparam, chulens3d)
+
+	marenoise:get2dMap_flat({x=minp.x,y=minp.z}, maremap)
+	hillnoise:get2dMap_flat({x=minp.x,y=minp.z}, hillmap)
+	edgenoise:get2dMap_flat({x=minp.x,y=minp.z}, edgemap)
 
 	-- Undersampled hills noise
-	local us_hillsnoiseparam = table.copy(hillsnoiseparam)
-	us_hillsnoiseparam.spread = {
-		x = hillsnoiseparam.spread.x / us_scale,
-		y = hillsnoiseparam.spread.y / us_scale,
-		z = hillsnoiseparam.spread.z / us_scale }
+	local us_hillnoiseparam = table.copy(hillnoiseparam)
+	us_hillnoiseparam.spread = {
+		x = hillnoiseparam.spread.x / us_scale,
+		y = hillnoiseparam.spread.y / us_scale,
+		z = hillnoiseparam.spread.z / us_scale }
 
 	-- Undersampled noise, covers larger scale maximum surface
 	local us_noise_minp = {
@@ -179,7 +191,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 		x = maxscalesize*(math.ceil(maxp.x/maxscalesize)+1)/us_scale,
 	 	y = maxscalesize*(math.ceil(maxp.z/maxscalesize)+1)/us_scale,
 	}
-	local us_hillsmap = minetest.get_perlin_map(us_hillsnoiseparam, {
+	local us_hillmap = minetest.get_perlin_map(us_hillnoiseparam, {
 		x = us_noise_maxp.x - us_noise_minp.x,
 		y = us_noise_maxp.y - us_noise_minp.y,
 	}):get2dMap_flat(us_noise_minp)
@@ -187,7 +199,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 	-- Crater inventory
 	local craters = {}
 
-	if minp.y < 50 and maxp.y > -50 then
+	if minp.y < 50 and maxp.y > -100 then
 
 		startcounter('crater inventory')
 
@@ -258,7 +270,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 			-- Check crater center is not on hills (only if not yet in a crater)
 			if crater.y == nil and
-				us_hillsmap[1 + math.floor(crater.x/us_scale) - us_noise_minp.x
+				us_hillmap[1 + math.floor(crater.x/us_scale) - us_noise_minp.x
 				+ (math.floor(crater.z/us_scale) - us_noise_minp.y)
 				* (us_noise_maxp.x - us_noise_minp.x)] < -10 then
 				crater.y = 0
@@ -277,7 +289,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 	-- Get the vmanip mapgen object and the nodes and VoxelArea
 	startcounter('get voxelarea')
 	local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
-	local data = vm:get_data()
+	vm:get_data(mapdata)
 	local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
 	stopcounter('get voxelarea')
 
@@ -292,12 +304,12 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 	for z = minp.z, maxp.z do
 		for x = minp.x, maxp.x do
-			local hillsheight = hillsmap[perlin_index] + edgemap[perlin_index] * 10
+			local hillheight = hillmap[perlin_index] + edgemap[perlin_index] * 10
 			local mareheight = maremap[perlin_index]
 			local rockheight, fillheight, edgeheight
 			local holeheight, oldheight
 
-			rockheight = math.max(mareheight, hillsheight)
+			rockheight = math.max(mareheight, hillheight)
 			fillheight = mareheight
 			edgeheight = mareheight
 
@@ -318,6 +330,12 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 							-- Everything inside hole is removed
 							rockheight = math.min(rockheight, holeheight)
 							fillheight = math.min(fillheight, holeheight)
+
+							if rockheight > fillheight then
+								rockheigt = rockheight -
+									math.max(0, wipe_age-crater.age)/wipe_age *
+							   		math.abs(edgemap[perlin_index])
+						   end
 
 							-- Fill with dust according to age
 							if d2 <= crater.holeR2 then
@@ -345,13 +363,13 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 			for y = minp.y, maxp.y do
 				if y < rockheight then
-					data[vi] = c_rock
+					mapdata[vi] = c_rock
 				elseif y < math.max(edgeheight, fillheight) then
-					data[vi] = c_sediment
+					mapdata[vi] = c_sediment
 				elseif y < math.max(rockheight, edgeheight, fillheight) + 1 then
-					data[vi] = c_dust
+					mapdata[vi] = c_dust
 				else
-					data[vi] = c_vacuum
+					mapdata[vi] = c_vacuum
 				end
 				vi = vi + yinc
 			end
@@ -365,7 +383,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 	-- Save to map
 	startcounter('save')
-	vm:set_data(data)
+	vm:set_data(mapdata)
 	vm:write_to_map()
 	stopcounter('save')
 	stopcounter('total')
