@@ -16,17 +16,33 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local mod = {}
-_G[minetest.get_current_modname()] = mod
+local profile={}
 
-mod.name = minetest.get_current_modname()
-mod.path = minetest.get_modpath(mod.name)
+-- Profiling
+local counters={}
 
-mod.materials = {}
-mod.noises = {}
+function profile.init()
+	counters = {}
+end
 
-mod.profile = dofile(mod.path..'/profile.lua')
+function profile.start(counter)
+	if counters[counter] == nil then
+		counters[counter] = { start = nil, total = 0 }
+	end
 
-dofile(mod.path..'/functions.lua')
-dofile(mod.path..'/config.lua')
-dofile(mod.path..'/mapgen.lua')
+	counters[counter].start = os.clock()
+end
+
+function profile.stop(counter)
+	counters[counter].total = counters[counter].total +
+		os.clock() - counters[counter].start
+	counters[counter].start = nil
+end
+
+function profile.show()
+	for name, counter in pairs(counters) do
+		print (name..": "..string.format("%.2fms",counter.total*1000))
+	end
+end
+
+return profile

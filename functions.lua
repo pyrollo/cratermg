@@ -16,17 +16,16 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local mod = {}
-_G[minetest.get_current_modname()] = mod
+local mod = _G[minetest.get_current_modname()]
 
-mod.name = minetest.get_current_modname()
-mod.path = minetest.get_modpath(mod.name)
-
-mod.materials = {}
-mod.noises = {}
-
-mod.profile = dofile(mod.path..'/profile.lua')
-
-dofile(mod.path..'/functions.lua')
-dofile(mod.path..'/config.lua')
-dofile(mod.path..'/mapgen.lua')
+-- Computes noise amplitude (actually half amplitude, can go form -amplitude
+-- to + amplitude)
+function mod.get_noise_amplitude(noise_params)
+	if (noise_params.persist == 1) then
+		return noise_params.octaves * noise_params.scale
+	else
+		return noise_params.scale *
+			(noise_params.persist ^ noise_params.noise_params.octaves - 1)
+			/ (noise_params.persist - 1)
+	end
+end
