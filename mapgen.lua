@@ -22,13 +22,13 @@ local mod = _G[minetest.get_current_modname()]
 Terminology
 
 Base map:
-rock : hills rock
+hill : hills
 mare : plains
 
 Craters :
 edge : edge sedimentation
 fill : filling sedimentation
-mineral : minerals+sediment
+remains : remains of the meteor (minerals+sediment)
 hole : crater hole
 
 *_curve: an abstract curve
@@ -130,11 +130,65 @@ local function get_parabolic_curve(d2, r2)
 end
 
 local function get_fill_height(crater, d2)
-	return get_parabolic_curve(d2, crater.holeR2) * crater.depth / 2 -- TODO, use AGE
+	return get_parabolic_curve(d2, crater.holeR2) * crater.fill_mult
 end
 
 local function get_hole_height(crater, d2)
 	return get_parabolic_curve(d2, crater.holeR2) * crater.depth
+end
+
+-- Computes crater influence at a given distance
+-- crater: crater array containing its caracteristics
+-- edgemap: value of edge noise at given point
+-- ground_level: ground level before the crater happens
+-- d2: Square of the distance to the crater center
+local function compute_crater_deformation(crater, edgemap, ground_level, d2)
+
+	if d2 <= crater.totalR2 then
+		-- Min and max level of changes in map due to the crater
+		local min_level = ground_level
+		local max_level = ground_level
+
+		-- Heights and levels
+		local remains_curve = get_peak_curve(d2, crater.holeR2, 20)
+		local edge_height = get_peak_curve(d2, crater.totalR2, 5)
+			* crater.edge_mult * (edgemap / edge_noise_amplitude + 1)
+
+		local fill_height = get_fill_height(crater, d2)
+		local hole_level = crater.y - get_hole_height(crater, d2)
+
+		-- Ejected sediments
+		local edge_level = ground_level + edge_height --(+age noise?)
+
+		ground_level = max(ground_level, edge_level)
+		max_level = max(max_level, ground_level)
+
+		-- Dig crater hole
+		edge_level = min(hole_level, edge_level)
+		ground_level = min(hole_level, ground_level)
+
+		min_level = min(min_level, ground_level)
+
+		-- Fill hole
+		if d2 < crater.holeR2 then
+			-- Add remains zone
+			remains_level = ground_level + min(fill_height,
+				floor(remains_curve*crater.depth/5 + random()))
+
+			-- Fill
+			fill_level = ground_level + fill_height
+
+			ground_level = max(remains_level, fill_level)
+			max_level = max(max_level, ground_level)
+
+		else
+			fill_level = ground_level
+			remains_level = ground_level
+		end
+
+		return ground_level, min_level, max_level,
+		       edge_level, remains_level, fill_level
+	end
 end
 
 -- Crater inventory of all crater interserting a given map zone
@@ -180,7 +234,7 @@ local function get_craters_list(minp, maxp)
 							z = z * scale.mapsize + random(scale.mapsize-1),
 							totalR = radius,
 							totalR2 = radius * radius,
-							depth = radius * (random() * 0.3 + 0.3),
+							depth = radius * (random() + 1) * 0.2,
 							age = math.sqrt(radius) * (random()*0.7 + 0.3),
 						}
 
@@ -207,6 +261,11 @@ local function get_craters_list(minp, maxp)
 						crater.holeR = 0.8 * radius - 3
 						crater.holeR2 = crater.holeR * crater.holeR
 
+						crater.edge_mult = crater.totalR2 *
+							get_peak_curve(crater.age, cratermg.wipe_age, 1000)
+						crater.fill_mult = crater.depth / (1 + max(0,
+							get_peak_curve(crater.age, cratermg.fill_age, 10)))
+
 						if crater.maxp.x > minp.x and
 						   crater.minp.x < maxp.x and
 						   crater.maxp.z > minp.z and
@@ -223,38 +282,38 @@ local function get_craters_list(minp, maxp)
 	table.sort(craters, function(a,b) return a.age>b.age end)
 
 	-- Compute impact heights and remove impacts on hills
+	-- (this is a gross calculation)
 	local index = 1
 	while index <= #craters do
 
 		local crater = craters[index]
+		local incrater = false
 
-		for oldindex = index-1, 1, -1 do
-			local oldcrater = craters[oldindex]
-			if crater.x>=oldcrater.minp.x and crater.x<=oldcrater.maxp.x and
-			   crater.z>=oldcrater.minp.z and crater.z<=oldcrater.maxp.z
+		crater.y = 0 -- Near mare height
+
+		-- Apply older craters transformations
+		for olderindex = 1, index-1 do
+			local oldercrater = craters[olderindex]
+			if crater.x>=oldercrater.minp.x and crater.x<=oldercrater.maxp.x and
+			   crater.z>=oldercrater.minp.z and crater.z<=oldercrater.maxp.z
 			then
-				local d2 = (oldcrater.x-crater.x) * (oldcrater.x-crater.x) +
-					(oldcrater.z-crater.z) * (oldcrater.z-crater.z)
-				if d2 < oldcrater.holeR2 then
-					crater.y = oldcrater.y
-						- get_hole_height(oldcrater, d2)
-						+ get_fill_height(oldcrater, d2)
-					goto craterfound
+				local d2 =
+					(oldercrater.x-crater.x) * (oldercrater.x-crater.x) +
+					(oldercrater.z-crater.z) * (oldercrater.z-crater.z)
+				if d2 < oldercrater.holeR2 then
+					crater.y = compute_crater_deformation(oldercrater, 0,
+						crater.y, d2)
+					incrater = true
 				end
 			end
 		end
 
-		::craterfound::
-
 		-- Check crater center is not on hills (only if not yet in a crater)
-		if crater.y == nil and
+		if not incrater and
 			us_hillmap[1 + floor(crater.x/us_scale) - us_noise_minp.x
 			+ (floor(crater.z/us_scale) - us_noise_minp.y)
-			* (us_noise_maxp.x - us_noise_minp.x)] < -10 then
-			crater.y = 0
-		end
-
-		if crater.y == nil then
+			* (us_noise_maxp.x - us_noise_minp.x)] > -10
+		then
 			table.remove(craters, index)
 		else
 			index = index + 1
@@ -295,14 +354,10 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 	marenoise = marenoise or minetest.get_perlin_map(cratermg.noises.mare, chulens3d)
 	hillnoise = hillnoise or minetest.get_perlin_map(cratermg.noises.hill, chulens3d)
 	edgenoise = edgenoise or minetest.get_perlin_map(cratermg.noises.edge, chulens3d)
---	cav1noise = edgenoise or minetest.get_perlin_map(cav1noiseparam, chulens3d)
---	cav2noise = edgenoise or minetest.get_perlin_map(cav2noiseparam, chulens3d)
 
 	marenoise:get2dMap_flat({x=minp.x,y=minp.z}, maremap)
 	hillnoise:get2dMap_flat({x=minp.x,y=minp.z}, hillmap)
 	edgenoise:get2dMap_flat({x=minp.x,y=minp.z}, edgemap)
---	cav1noise:get3dMap_flat(minp, cav1map)
---	cav2noise:get3dMap_flat(minp, cav2map)
 
 	-- Get the vmanip mapgen object and the nodes and VoxelArea
 	p.start('get voxelarea')
@@ -322,6 +377,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 	local noise2dix = 1
 	local noise3dix = 1
+
 
 	for z = minp.z, maxp.z do
 		for x = minp.x, maxp.x do
@@ -347,6 +403,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 			-- Crater generation
 			p.start('crater generation')
+			local min_level, max_level, edge_level, remains_level, fill_level
+
 			for _, crater in pairs(craters) do
 				if crater.maxp.x >= x and crater.minp.x <= x and
 				   crater.maxp.z >= z and crater.minp.z <= z
@@ -355,66 +413,22 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 						+(z-crater.z)*(z-crater.z)
 
 					if d2 <= crater.totalR2 then
-						-- Min and max level of changes in map due to the crater
-						local min_level = ground_level
-						local max_level = ground_level
-
-						-- Heights and levels
-						local remains_curve = get_peak_curve(d2, crater.holeR2, 20)
-						local edge_height = get_peak_curve(d2, crater.totalR2, 5)
-							* crater.totalR2
- 							* (edgemap[noise2dix] / edge_noise_amplitude + 1)
---							(math.abs(edgemap[noise2dix]) * (min(age/maxage,1)) + (maxage - age)/maxage)
-						local fill_height = get_fill_height(crater, d2)
-						local hole_level = crater.y - get_hole_height(crater, d2)
-
-						-- Ejected sediments
-						edge_level = ground_level + edge_height --(+age noise?)
-
-						ground_level = max(ground_level, edge_level)
-						max_level = max(max_level, ground_level)
-
-						-- Dig crater hole
-						edge_level = min(hole_level, edge_level)
-						ground_level = min(hole_level, ground_level)
-
-						min_level = min(min_level, ground_level)
-
-						-- Fill hole
-						if d2 < crater.holeR2 then
-							-- Add remains zone
-							remains_level = ground_level + min(fill_height,
-								floor(remains_curve*crater.depth/5 + random()))
-
-							-- Fill
-							fill_level = ground_level + fill_height
-
-							ground_level = max(remains_level, fill_level)
-							max_level = max(max_level, ground_level)
-
-						else
-							fill_level = ground_level
-							remains_level = ground_level
-						end
-
-						-- Y loop
+						ground_level, min_level, max_level,
+						edge_level, remains_level, fill_level
+							= compute_crater_deformation(
+								crater, edgemap[noise2dix], ground_level, d2)
+						-- Y loop (mare height added to all to introduce some noise)
 						if min_level < maxp.y+1 and max_level >= minp.y then
 							min_level = min(max(floor(min_level), minp.y), maxp.y)
 							max_level = min(max(ceil(max_level), minp.y), maxp.y)
 
 							vmi2 = vmi + (min_level - minp.y) * yinc
 							for y = min_level, max_level do
---								yr = y + random()
 								if y < floor(edge_level) then
 									mapdata[vmi2] = c.crater_edge
 								elseif y < floor(remains_level) then
 								-- TODO : MIX UP MINERALS
-		--							mapdata[vmi2] = c_crater_fill
-			if random()< remains_curve*(remains_level-y)/10 then
 									mapdata[vmi2] = crater.mineral.cid
-			else
-				mapdata[vmi2] = c.crater_fill
-			end
 								elseif y < floor(fill_level) then
 									mapdata[vmi2] = c.crater_fill
 								else
@@ -429,12 +443,13 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 			p.stop('crater generation')
 
 			--Dust generation
-			if ground_level >= minp.y and ground_level <= maxp.y then
-				vmi2 = vmi + yinc * (ground_level - minp.y)
+			if floor(ground_level) >= minp.y
+			and floor(ground_level) <= maxp.y then
+				vmi2 = vmi + (floor(ground_level) - minp.y) * yinc
 				mapdata[vmi2] = c.dust
 			end
-			noise2dix = noise2dix + 1
 
+			noise2dix = noise2dix + 1
 			vmi = vmi  + 1
 		end -- Z loop
 		vmi = vmi + zinc - (maxp.x - minp.x + 1)
@@ -449,7 +464,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 	p.stop('save')
 	p.stop('total')
 
-	p.show()
+--	p.show()
 --	print("generation "..(minetest.pos_to_string(minp)).." - "..(minetest.pos_to_string(maxp))..
 --	" took ".. string.format("%.2fms", (os.clock() - tstart) * 1000))
 end)
