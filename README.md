@@ -18,7 +18,11 @@ Map generator with hills and craters. The idea is to create a map generator for 
 
 To test Crater MG:
   * create a new world
+<<<<<<< HEAD
   * select *minetest_game* game
+=======
+  * select *minetest_game* game 
+>>>>>>> 1dcfb5a62bad446ca099bd8b5bda54ef5ad8a1ab
   * choose *single node* map generator
   * enable *cratermg* mod
 
