@@ -16,17 +16,16 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local mod = {}
-_G[minetest.get_current_modname()] = mod
+cratermg = {}
 
-mod.name = minetest.get_current_modname()
-mod.path = minetest.get_modpath(mod.name)
+cratermg.name = minetest.get_current_modname()
+cratermg.path = minetest.get_modpath(minetest.get_current_modname())
 
-mod.materials = {}
-mod.noises = {}
+cratermg.materials = {}
+cratermg.noises = {}
 
-mod.profile = dofile(mod.path..'/profile.lua')
+cratermg.profile = dofile(cratermg.path..'/profile.lua')
 
-dofile(mod.path..'/functions.lua')
-dofile(mod.path..'/config.lua')
-dofile(mod.path..'/mapgen.lua')
+dofile(cratermg.path..'/functions.lua')
+dofile(cratermg.path..'/config.lua')
+dofile(cratermg.path..'/mapgen.lua')

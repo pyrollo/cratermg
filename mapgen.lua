@@ -18,24 +18,6 @@
 
 local mod = _G[minetest.get_current_modname()]
 
---[[
-Terminology
-
-Base map:
-hill : hills
-mare : plains
-
-Craters :
-edge : edge sedimentation
-fill : filling sedimentation
-remains : remains of the meteor (minerals+sediment)
-hole : crater hole
-
-*_curve: an abstract curve
-*_height: relative height of a layer (=thickness)
-*_level: absolute level of a layer (usualy top)
-]]
-
 local mineralstotalchance = 0
 for _, mineral in ipairs(cratermg.minerals) do
 	mineralstotalchance = mineralstotalchance + mineral.chance
@@ -67,7 +49,7 @@ minetest.register_on_mapgen_init(function(mapgen_params)
 )
 
 -- Caclulate noise amplitude once for all
-local edge_noise_amplitude = mod.get_noise_amplitude(cratermg.noises.edge)
+local small_noise_amplitude = mod.get_noise_amplitude(cratermg.noises.small)
 
 -- Undersample scale for hills noise
 local us_scale = 16
@@ -106,10 +88,10 @@ end
 
 -- Reused mapgen vars
 local mapdata = {}
-local marenoise, hillnoise, edgenoise, cav1noise, cav2noise
+local marenoise, hillnoise, smallnoise, cav1noise, cav2noise
 local maremap = {}
 local hillmap = {}
-local edgemap = {}
+local smallmap = {}
 local cav1map = {}
 local cav2map = {}
 local us_hillmap = {} -- Undersampled map for gross hill detection
@@ -139,10 +121,10 @@ end
 
 -- Computes crater influence at a given distance
 -- crater: crater array containing its caracteristics
--- edgemap: value of edge noise at given point
+-- smallmap: value of small noise at given point
 -- ground_level: ground level before the crater happens
 -- d2: Square of the distance to the crater center
-local function compute_crater_deformation(crater, edgemap, ground_level, d2)
+local function compute_crater_deformation(crater, smallmap, ground_level, d2)
 
 	if d2 <= crater.totalR2 then
 		-- Min and max level of changes in map due to the crater
@@ -152,7 +134,7 @@ local function compute_crater_deformation(crater, edgemap, ground_level, d2)
 		-- Heights and levels
 		local remains_curve = get_peak_curve(d2, crater.holeR2, 20)
 		local edge_height = get_peak_curve(d2, crater.totalR2, 5)
-			* crater.edge_mult * (edgemap / edge_noise_amplitude + 1)
+			* crater.edge_mult * (smallmap / small_noise_amplitude + 1)
 
 		local fill_height = get_fill_height(crater, d2)
 		local hole_level = crater.y - get_hole_height(crater, d2)
@@ -280,7 +262,6 @@ local function get_craters_list(minp, maxp)
 
 	-- Sort by age
 	table.sort(craters, function(a,b) return a.age>b.age end)
-
 	-- Compute impact heights and remove impacts on hills
 	-- (this is a gross calculation)
 	local index = 1
@@ -289,7 +270,7 @@ local function get_craters_list(minp, maxp)
 		local crater = craters[index]
 		local incrater = false
 
-		crater.y = 0 -- Near mare height
+		crater.y = cratermg.surface -- Near mare height
 
 		-- Apply older craters transformations
 		for olderindex = 1, index-1 do
@@ -312,7 +293,7 @@ local function get_craters_list(minp, maxp)
 		if not incrater and
 			us_hillmap[1 + floor(crater.x/us_scale) - us_noise_minp.x
 			+ (floor(crater.z/us_scale) - us_noise_minp.y)
-			* (us_noise_maxp.x - us_noise_minp.x)] > -10
+			* (us_noise_maxp.x - us_noise_minp.x)] > cratermg.surface-10
 		then
 			table.remove(craters, index)
 		else
@@ -334,7 +315,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
     -------------------
 
 	local craters
-	if minp.y < 50 and maxp.y > -200 then
+	if minp.y < cratermg.surfacemax and maxp.y > cratermg.surfacemin then
 		p.start('crater inventory')
 		craters = get_craters_list(minp, maxp)
 		p.stop('crater inventory')
@@ -353,11 +334,11 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 	marenoise = marenoise or minetest.get_perlin_map(cratermg.noises.mare, chulens3d)
 	hillnoise = hillnoise or minetest.get_perlin_map(cratermg.noises.hill, chulens3d)
-	edgenoise = edgenoise or minetest.get_perlin_map(cratermg.noises.edge, chulens3d)
+	smallnoise = smallnoise or minetest.get_perlin_map(cratermg.noises.small, chulens3d)
 
 	marenoise:get2dMap_flat({x=minp.x,y=minp.z}, maremap)
 	hillnoise:get2dMap_flat({x=minp.x,y=minp.z}, hillmap)
-	edgenoise:get2dMap_flat({x=minp.x,y=minp.z}, edgemap)
+	smallnoise:get2dMap_flat({x=minp.x,y=minp.z}, smallmap)
 
 	-- Get the vmanip mapgen object and the nodes and VoxelArea
 	p.start('get voxelarea')
@@ -384,7 +365,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 			-- Base rock + mare generation (must be before crater generation)
 			p.start('base generation')
-			local hill_level = hillmap[noise2dix] + edgemap[noise2dix] * 10
+			local hill_level = hillmap[noise2dix] + smallmap[noise2dix] * 10
 			local mare_level = maremap[noise2dix]
 			local ground_level = max(hill_level, mare_level)
 
@@ -416,7 +397,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 						ground_level, min_level, max_level,
 						edge_level, remains_level, fill_level
 							= compute_crater_deformation(
-								crater, edgemap[noise2dix], ground_level, d2)
+								crater, smallmap[noise2dix], ground_level, d2)
 						-- Y loop (mare height added to all to introduce some noise)
 						if min_level < maxp.y+1 and max_level >= minp.y then
 							min_level = min(max(floor(min_level), minp.y), maxp.y)

@@ -27,25 +27,38 @@ cratermg.materials.crater_fill = minetest.get_content_id("default:sandstone")
 --cratermg.materials.crater_fill = minetest.get_content_id("default:glass")
 cratermg.materials.dust        = minetest.get_content_id("default:sand")
 
+-- Levels
+---------
+
+-- Mean surface level
+cratermg.surface = 0
+
+-- Boundaries of surface map generation
+cratermg.surfacemin = cratermg.surface - 200
+cratermg.surfacemax = cratermg.surface + 200
+
 -- Noises
 ---------
 
 -- Mare (plains) noise. Should be quite flat (small scale)
 cratermg.noises.mare = {
 	seed = 1337, spread = {x=256, y=256, z=256},
-    offset = 0, scale = 5, octaves = 2, persist = 0.5,
+    offset = cratermg.surface,
+	scale = 5, octaves = 2, persist = 0.5,
 }
 
 -- Hill noise
 cratermg.noises.hill = {
 	spread = {x=256, y=256, z=256},
-    offset = -10, scale = 20, seed = 1338, octaves = 4, persist = 0.7,
+    offset = cratermg.surface -10,
+	scale = 20, seed = 1338, octaves = 4, persist = 0.7,
 }
 
--- Crater edge noise. Used to avoid perfect regular crater edges.  Should be noisy
-cratermg.noises.edge = {
+-- Multipurpose small noise. Used to avoid perfect crater edges and hills.
+-- Should be noisy and have an offset = 0
+cratermg.noises.small = {
 	spread = {x=32, y=32, z=32},
-    offset = 0, scale = 1, seed = 1339, octaves = 3, persist = 1,
+    offset = 0,	scale = 1, seed = 1339, octaves = 3, persist = 1,
 }
 
 -- Craters
