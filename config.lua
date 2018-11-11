@@ -61,6 +61,23 @@ cratermg.noises.small = {
     offset = 0,	scale = 1, seed = 1339, octaves = 3, persist = 1,
 }
 
+-- Caves noises
+cratermg.noises.crack1 = {
+	spread = {x=128, y=256, z=128},
+    offset = 0.1, scale = 1, seed = 1340, octaves = 3, persist = 1,
+}
+
+cratermg.noises.crack2 = {
+	spread = {x=256, y=512, z=256},
+    offset = 0.1, scale = 1, seed = 1341, octaves = 4, persist = 0.8,
+}
+
+cratermg.noises.cracksize = {
+	spread = {x=256, y=256, z=256},
+    offset = 0,	scale = 0.02, seed = 1342, octaves = 1, persist = 0.5,
+}
+
+
 -- Craters
 ----------
 

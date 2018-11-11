@@ -88,14 +88,17 @@ end
 
 -- Reused mapgen vars
 local mapdata = {}
-local marenoise, hillnoise, smallnoise, cav1noise, cav2noise
+
+local marenoise, hillnoise, smallnoise
+local crack1noise, crack1noise, cracksizenoise
+
 local maremap = {}
 local hillmap = {}
 local smallmap = {}
-local cav1map = {}
-local cav2map = {}
+local crack1map = {}
+local crack2map = {}
+local cracksizemap = {}
 local us_hillmap = {} -- Undersampled map for gross hill detection
-
 
 -- Standard curves functions
 local function get_peak_curve(d2, r2, dispertion)
@@ -332,13 +335,21 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 		y=maxp.y - minp.y + 1,
 		z=maxp.z - minp.z + 1}
 
+
 	marenoise = marenoise or minetest.get_perlin_map(cratermg.noises.mare, chulens3d)
 	hillnoise = hillnoise or minetest.get_perlin_map(cratermg.noises.hill, chulens3d)
 	smallnoise = smallnoise or minetest.get_perlin_map(cratermg.noises.small, chulens3d)
+	crack1noise = cave1noise or minetest.get_perlin_map(cratermg.noises.crack1, chulens3d)
+	crack2noise = cave1noise or minetest.get_perlin_map(cratermg.noises.crack2, chulens3d)
+	cracksizenoise = cave1noise or minetest.get_perlin_map(cratermg.noises.cracksize, chulens3d)
 
 	marenoise:get2dMap_flat({x=minp.x,y=minp.z}, maremap)
 	hillnoise:get2dMap_flat({x=minp.x,y=minp.z}, hillmap)
 	smallnoise:get2dMap_flat({x=minp.x,y=minp.z}, smallmap)
+
+	crack1noise:get3dMap_flat(minp, crack1map)
+	crack2noise:get3dMap_flat(minp, crack2map)
+	cracksizenoise:get3dMap_flat(minp, cracksizemap)
 
 	-- Get the vmanip mapgen object and the nodes and VoxelArea
 	p.start('get voxelarea')
@@ -349,36 +360,43 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
  	p.start('main loop')
 
-    -- Voxel manip index
-	local vmi = area:index(minp.x, minp.y, minp.z)
+	-- Voxel manip indexes
+	local vmix, vmiy, vmiz
+	vmiz = area:index(minp.x, minp.y, minp.z)
 
-    -- Y and Z increments of voxel manip index
-	local yinc = area:index(minp.x, minp.y + 1, minp.z) - vmi
-	local zinc = area:index(minp.x, minp.y, minp.z + 1) - vmi
+    -- Increments of voxel manip index
+	local xinc = area:index(minp.x + 1, minp.y, minp.z) - vmiz
+	local yinc = area:index(minp.x, minp.y + 1, minp.z) - vmiz
+	local zinc = area:index(minp.x, minp.y, minp.z + 1) - vmiz
 
-	local noise2dix = 1
-	local noise3dix = 1
-
+	-- Noises indexes
+	local n2d = 1
+	local n3dx, n3dy, n3dz
+	n3dz = 1
+	local n3dxinc = 1
+	local n3dyinc = chulens3d.x
+	local n3dzinc = chulens3d.x * chulens3d.y
 
 	for z = minp.z, maxp.z do
+		vmix = vmiz
+		n3dx = n3dz
 		for x = minp.x, maxp.x do
-
 			-- Base rock + mare generation (must be before crater generation)
 			p.start('base generation')
-			local hill_level = hillmap[noise2dix] + smallmap[noise2dix] * 10
-			local mare_level = maremap[noise2dix]
+			local hill_level = hillmap[n2d] + smallmap[n2d] * 10
+			local mare_level = maremap[n2d]
 			local ground_level = max(hill_level, mare_level)
 
-			local vmi2 = vmi -- Voxel manip index for y loop
+			vmiy = vmix
 			for y = minp.y, maxp.y do
 				if y < floor(hill_level) then
-					mapdata[vmi2] = c.hills
+					mapdata[vmiy] = c.hills
 				elseif y < floor(mare_level) then
-					mapdata[vmi2] = c.mare
+					mapdata[vmiy] = c.mare
 				else
-					mapdata[vmi2] = c.vacuum
+					mapdata[vmiy] = c.vacuum
 				end
-                vmi2 = vmi2 + yinc
+                vmiy = vmiy + yinc
 			end
 			p.stop('base generation')
 
@@ -397,25 +415,25 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 						ground_level, min_level, max_level,
 						edge_level, remains_level, fill_level
 							= compute_crater_deformation(
-								crater, smallmap[noise2dix], ground_level, d2)
+								crater, smallmap[n2d], ground_level, d2)
 						-- Y loop (mare height added to all to introduce some noise)
 						if min_level < maxp.y+1 and max_level >= minp.y then
 							min_level = min(max(floor(min_level), minp.y), maxp.y)
 							max_level = min(max(ceil(max_level), minp.y), maxp.y)
 
-							vmi2 = vmi + (min_level - minp.y) * yinc
+							vmiy = vmix + (min_level - minp.y) * yinc
 							for y = min_level, max_level do
 								if y < floor(edge_level) then
-									mapdata[vmi2] = c.crater_edge
+									mapdata[vmiy] = c.crater_edge
 								elseif y < floor(remains_level) then
 								-- TODO : MIX UP MINERALS
-									mapdata[vmi2] = crater.mineral.cid
+									mapdata[vmiy] = crater.mineral.cid
 								elseif y < floor(fill_level) then
-									mapdata[vmi2] = c.crater_fill
+									mapdata[vmiy] = c.crater_fill
 								else
-									mapdata[vmi2] = c.vacuum
+									mapdata[vmiy] = c.vacuum
 								end
-								vmi2 = vmi2 + yinc
+								vmiy = vmiy + yinc
 							end
 						end
 					end
@@ -426,14 +444,33 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 			--Dust generation
 			if floor(ground_level) >= minp.y
 			and floor(ground_level) <= maxp.y then
-				vmi2 = vmi + (floor(ground_level) - minp.y) * yinc
-				mapdata[vmi2] = c.dust
+				vmiy = vmix + (floor(ground_level) - minp.y) * yinc
+				mapdata[vmiy] = c.dust
 			end
 
-			noise2dix = noise2dix + 1
-			vmi = vmi  + 1
+			p.start('cave generation')
+			-- Caves
+			vmiy = vmix
+			n3dy = n3dx
+			for y = minp.y, maxp.y do
+				local proba = cracksizemap[n3dy] * (1000 - y + cratermg.surface) / 1000
+				if math.abs(crack1map[n3dy]) < proba
+				or math.abs(crack2map[n3dy]) < proba
+				then
+					mapdata[vmiy] = c.vacuum
+				end
+				n3dy = n3dy + n3dyinc
+				vmiy = vmiy + yinc
+			end
+			p.stop('cave generation')
+
+			n2d = n2d + 1
+			n3dx = n3dx + n3dxinc
+			vmix = vmix + xinc
 		end -- Z loop
-		vmi = vmi + zinc - (maxp.x - minp.x + 1)
+
+		n3dz = n3dz + n3dzinc
+		vmiz = vmiz  + zinc
     end -- X loop
 
 	p.stop('main loop')
@@ -441,6 +478,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 	-- Save to map
 	p.start('save')
 	vm:set_data(mapdata)
+	vm:set_lighting( {day=0, night=0})
+	vm:calc_lighting()
 	vm:write_to_map()
 	p.stop('save')
 	p.stop('total')
