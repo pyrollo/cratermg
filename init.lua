@@ -26,6 +26,30 @@ cratermg.noises = {}
 
 cratermg.profile = dofile(cratermg.path..'/profile.lua')
 
+
+minetest.register_node("cratermg:stone", {
+	description = "Cratermg Stone",
+	tiles = {"default_stone.png^[colorize:#F408"},
+	groups = {cracky = 2},
+	drop = "cratermg:sediment",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:sediment", {
+	description = "Cratermg Sediments",
+	tiles = {"default_cobble.png^[colorize:#F408"},
+	groups = {cracky = 2},
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:dust", {
+	description = "Cratermg dust",
+	tiles = {"default_sand.png^[colorize:#F408"},
+	groups = {crumbly = 3, falling_node = 1, sand = 1},
+	sounds = default.node_sound_sand_defaults(),
+})
+
 dofile(cratermg.path..'/functions.lua')
 dofile(cratermg.path..'/config.lua')
+dofile(cratermg.path..'/oregen.lua')
 dofile(cratermg.path..'/mapgen.lua')

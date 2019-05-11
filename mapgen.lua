@@ -22,7 +22,7 @@ local mineralstotalchance = 0
 for _, mineral in ipairs(cratermg.minerals) do
 	mineralstotalchance = mineralstotalchance + mineral.chance
 	if mineral.mineral then
-		mineral.cid = minetest.	get_content_id(mineral.mineral)
+		mineral.cid = minetest.get_content_id(mineral.mineral)
 	end
 end
 
@@ -34,17 +34,14 @@ local floor = math.floor
 local random = math.random
 
 -- On map gen init, get map seed
-local mapseed = 0
+cratermg.mapseed = 0
 
 minetest.register_on_mapgen_init(function(mapgen_params)
-		if mapgen_params.mgname ~= "singlenode" then
-			minetest.log("warning", "[cratermg] Mapgen should be set to \"singlenode\"")
-		end
 		-- Note on map seed: Lua does not seem to be able to correctly handle 64
 		-- bits integer so the 3 last digits are rounded. Same if we add small
 		-- numbers to the 64bits key, rounded result will not include small
 		-- number adition. So key is restricted to (inaccurate) 32 lower bits
-		mapseed = mapgen_params.seed % (2^32)
+		cratermg.mapseed = mapgen_params.seed % (2^32)
 	end
 )
 
@@ -90,7 +87,7 @@ end
 local mapdata = {}
 
 local marenoise, hillnoise, smallnoise
-local crack1noise, crack1noise, cracksizenoise
+local crack1noise, crack2noise, cracksizenoise
 
 local maremap = {}
 local hillmap = {}
@@ -133,6 +130,8 @@ local function compute_crater_deformation(crater, smallmap, ground_level, d2)
 		-- Min and max level of changes in map due to the crater
 		local min_level = ground_level
 		local max_level = ground_level
+
+		local fill_level, remains_level
 
 		-- Heights and levels
 		local remains_curve = get_peak_curve(d2, crater.holeR2, 20)
@@ -200,7 +199,7 @@ local function get_craters_list(minp, maxp)
 	minetest.get_perlin_map(us_hillnoiseparam, {
 		x = us_noise_maxp.x - us_noise_minp.x,
 		y = us_noise_maxp.y - us_noise_minp.y,
-	}):get2dMap_flat(us_noise_minp, us_hillmap)
+	}):get_2d_map_flat(us_noise_minp, us_hillmap)
 
 	for _, scale in pairs(scales) do
 
@@ -209,8 +208,8 @@ local function get_craters_list(minp, maxp)
 				ceil(maxp.x / scale.mapsize) do
 			for z = floor(minp.z / scale.mapsize) - 1,
 					ceil(maxp.z / scale.mapsize) do
-				math.randomseed(mapseed + scale.zseed * z + x + scale.seed) -- Sector seed
-
+				math.randomseed( -- Sector seed
+					cratermg.mapseed + scale.zseed * z + x + scale.seed)
 				for _ = 1, cratermg.craternumber * scale.nummult do
 					local radius = scale.rmin  + (scale.rmax - scale.rmin) * random()
 					if random() * scale.maxproba < proba(radius) then
@@ -335,21 +334,20 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 		y=maxp.y - minp.y + 1,
 		z=maxp.z - minp.z + 1}
 
-
 	marenoise = marenoise or minetest.get_perlin_map(cratermg.noises.mare, chulens3d)
 	hillnoise = hillnoise or minetest.get_perlin_map(cratermg.noises.hill, chulens3d)
 	smallnoise = smallnoise or minetest.get_perlin_map(cratermg.noises.small, chulens3d)
-	crack1noise = cave1noise or minetest.get_perlin_map(cratermg.noises.crack1, chulens3d)
-	crack2noise = cave1noise or minetest.get_perlin_map(cratermg.noises.crack2, chulens3d)
-	cracksizenoise = cave1noise or minetest.get_perlin_map(cratermg.noises.cracksize, chulens3d)
+	crack1noise = crack1noise or minetest.get_perlin_map(cratermg.noises.crack1, chulens3d)
+	crack2noise = crack2noise or minetest.get_perlin_map(cratermg.noises.crack2, chulens3d)
+	cracksizenoise = cracksizenoise or minetest.get_perlin_map(cratermg.noises.cracksize, chulens3d)
 
-	marenoise:get2dMap_flat({x=minp.x,y=minp.z}, maremap)
-	hillnoise:get2dMap_flat({x=minp.x,y=minp.z}, hillmap)
-	smallnoise:get2dMap_flat({x=minp.x,y=minp.z}, smallmap)
+	marenoise:get_2d_map_flat({x=minp.x,y=minp.z}, maremap)
+	hillnoise:get_2d_map_flat({x=minp.x,y=minp.z}, hillmap)
+	smallnoise:get_2d_map_flat({x=minp.x,y=minp.z}, smallmap)
 
-	crack1noise:get3dMap_flat(minp, crack1map)
-	crack2noise:get3dMap_flat(minp, crack2map)
-	cracksizenoise:get3dMap_flat(minp, cracksizemap)
+	crack1noise:get_3d_map_flat(minp, crack1map)
+	crack2noise:get_3d_map_flat(minp, crack2map)
+	cracksizenoise:get_3d_map_flat(minp, cracksizemap)
 
 	-- Get the vmanip mapgen object and the nodes and VoxelArea
 	p.start('get voxelarea')
@@ -456,6 +454,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 				local proba = cracksizemap[n3dy] * (1000 - y + cratermg.surface) / 1000
 				if math.abs(crack1map[n3dy]) < proba
 				or math.abs(crack2map[n3dy]) < proba
+-- debug for testing
+or x>=0
 				then
 					mapdata[vmiy] = c.vacuum
 				end
@@ -474,6 +474,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
     end -- X loop
 
 	p.stop('main loop')
+
+ 	cratermg.ores.generate(minp, maxp, mapdata, area)
 
 	-- Save to map
 	p.start('save')

@@ -20,12 +20,14 @@
 ------------
 
 cratermg.materials.vacuum      = minetest.get_content_id("air")
-cratermg.materials.hills       = minetest.get_content_id("default:desert_stone")
-cratermg.materials.mare        = minetest.get_content_id("default:desert_stone")
-cratermg.materials.crater_edge = minetest.get_content_id("default:desert_cobble")
-cratermg.materials.crater_fill = minetest.get_content_id("default:sandstone")
---cratermg.materials.crater_fill = minetest.get_content_id("default:glass")
-cratermg.materials.dust        = minetest.get_content_id("default:sand")
+cratermg.materials.hills       = minetest.get_content_id("cratermg:stone")
+cratermg.materials.mare        = minetest.get_content_id("cratermg:stone")
+cratermg.materials.crater_edge = minetest.get_content_id("cratermg:sediment")
+cratermg.materials.crater_fill = minetest.get_content_id("cratermg:sediment")
+cratermg.materials.dust        = minetest.get_content_id("cratermg:dust")
+
+--cratermg.materials.dust = minetest.get_content_id("default:glass")
+
 
 -- Levels
 ---------
