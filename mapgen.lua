@@ -469,13 +469,15 @@ or x>=0
 			vmix = vmix + xinc
 		end -- Z loop
 
-		n3dz = n3dz + n3dzinc
-		vmiz = vmiz  + zinc
-    end -- X loop
+	n3dz = n3dz + n3dzinc
+	vmiz = vmiz  + zinc
+  end -- X loop
 
 	p.stop('main loop')
 
- 	cratermg.ores.generate(minp, maxp, mapdata, area)
+	p.start('oregen')
+ 	cratermg.ore_generate(minp, maxp, mapdata, area, p)
+	p.stop('oregen')
 
 	-- Save to map
 	p.start('save')
@@ -485,8 +487,8 @@ or x>=0
 	vm:write_to_map()
 	p.stop('save')
 	p.stop('total')
-
---	p.show()
+print("===")
+	p.show()
 --	print("generation "..(minetest.pos_to_string(minp)).." - "..(minetest.pos_to_string(maxp))..
 --	" took ".. string.format("%.2fms", (os.clock() - tstart) * 1000))
 end)
