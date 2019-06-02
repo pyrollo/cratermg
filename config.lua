@@ -20,12 +20,14 @@
 ------------
 
 cratermg.materials.vacuum      = minetest.get_content_id("air")
-cratermg.materials.hills       = minetest.get_content_id("default:desert_stone")
-cratermg.materials.mare        = minetest.get_content_id("default:desert_stone")
-cratermg.materials.crater_edge = minetest.get_content_id("default:desert_cobble")
-cratermg.materials.crater_fill = minetest.get_content_id("default:sandstone")
---cratermg.materials.crater_fill = minetest.get_content_id("default:glass")
-cratermg.materials.dust        = minetest.get_content_id("default:sand")
+cratermg.materials.hills       = minetest.get_content_id("cratermg:stone")
+cratermg.materials.mare        = minetest.get_content_id("cratermg:stone")
+cratermg.materials.crater_edge = minetest.get_content_id("cratermg:sediment")
+cratermg.materials.crater_fill = minetest.get_content_id("cratermg:sediment")
+cratermg.materials.dust        = minetest.get_content_id("cratermg:dust")
+
+--cratermg.materials.dust = minetest.get_content_id("default:glass")
+
 
 -- Levels
 ---------
@@ -60,6 +62,23 @@ cratermg.noises.small = {
 	spread = {x=32, y=32, z=32},
     offset = 0,	scale = 1, seed = 1339, octaves = 3, persist = 1,
 }
+
+-- Caves noises
+cratermg.noises.crack1 = {
+	spread = {x=128, y=256, z=128},
+    offset = 0.1, scale = 1, seed = 1340, octaves = 3, persist = 1,
+}
+
+cratermg.noises.crack2 = {
+	spread = {x=256, y=512, z=256},
+    offset = 0.1, scale = 1, seed = 1341, octaves = 4, persist = 0.8,
+}
+
+cratermg.noises.cracksize = {
+	spread = {x=256, y=256, z=256},
+    offset = 0,	scale = 0.02, seed = 1342, octaves = 1, persist = 0.5,
+}
+
 
 -- Craters
 ----------
