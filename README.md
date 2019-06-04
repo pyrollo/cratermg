@@ -6,7 +6,7 @@ Map generator with hills and craters. The idea is to create a map generator for 
 
 ![Presentation image of Crater MG](screenshot.png)
 
-**Version**: Proof of concept
+**Version**: Alpha
 
 **Dependancies**: default
 
@@ -18,12 +18,14 @@ Map generator with hills and craters. The idea is to create a map generator for 
 
 To test Crater MG:
   * create a new world
-<<<<<<< HEAD
   * select *minetest_game* game
-=======
-  * select *minetest_game* game 
->>>>>>> 1dcfb5a62bad446ca099bd8b5bda54ef5ad8a1ab
   * choose *single node* map generator
   * enable *cratermg* mod
 
 And explore lunar landcape !
+
+## Remaining todo before beta
+  * Improve crater minerals (meteorite stones ?)
+  * Make ore nodes groups consistant with original minetest_game ones
+  * Add planet stone based recipes (cook, grind, bricks, blocks)
+  * Separate cobble and sediment (sediment could be like clay) ?

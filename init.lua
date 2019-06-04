@@ -53,3 +53,17 @@ dofile(cratermg.path..'/functions.lua')
 dofile(cratermg.path..'/config.lua')
 dofile(cratermg.path..'/oregen.lua')
 dofile(cratermg.path..'/mapgen.lua')
+
+if cratermg.use_cratermg_nodes then
+	dofile(cratermg.path..'/nodes.lua')
+	if minetest.get_modpath('technic_worldgen') then
+		dofile(cratermg.path..'/technic.lua')
+	end
+end
+
+if cratermg.chamge_ambiance then
+	minetest.register_on_joinplayer(function(player)
+		player:set_sky("#e2aa8c", "plain")
+		player:set_clouds({density=0})
+	end)
+end

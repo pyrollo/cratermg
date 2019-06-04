@@ -16,24 +16,33 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+-- Main
+-------
+
+-- Use CraterMG defined nodes ? If not, minetest nodes are used unless overiden
+-- by custom config
+cratermg.use_cratermg_nodes = true
+
+-- Change sky and fog color for better ambiance
+cratermg.chamge_ambiance = true
+
+-- Mean surface level
+cratermg.surface = 0
+
 -- Materials
 ------------
 
 cratermg.materials.vacuum      = minetest.get_content_id("air")
-cratermg.materials.hills       = minetest.get_content_id("cratermg:stone")
-cratermg.materials.mare        = minetest.get_content_id("cratermg:stone")
-cratermg.materials.crater_edge = minetest.get_content_id("cratermg:sediment")
-cratermg.materials.crater_fill = minetest.get_content_id("cratermg:sediment")
-cratermg.materials.dust        = minetest.get_content_id("cratermg:dust")
+cratermg.materials.hills       = minetest.get_content_id("default:stone")
+cratermg.materials.mare        = minetest.get_content_id("default:stone")
+cratermg.materials.crater_edge = minetest.get_content_id("default:cobble")
+cratermg.materials.crater_fill = minetest.get_content_id("default:cobble")
+cratermg.materials.dust        = minetest.get_content_id("default:sand")
 
 --cratermg.materials.dust = minetest.get_content_id("default:glass")
 
-
 -- Levels
 ---------
-
--- Mean surface level
-cratermg.surface = 0
 
 -- Boundaries of surface map generation
 cratermg.surfacemin = cratermg.surface - 200
