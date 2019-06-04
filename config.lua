@@ -23,6 +23,9 @@
 -- by custom config
 cratermg.use_cratermg_nodes = true
 
+-- Change sky and fog color for better ambiance
+cratermg.chamge_ambiance = true
+
 -- Mean surface level
 cratermg.surface = 0
 

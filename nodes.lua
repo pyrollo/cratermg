@@ -50,7 +50,7 @@ minetest.register_node("cratermg:stone_with_coal", {
 	description = "Coal Ore",
 	tiles = {"default_stone.png^[colorize:#F408^default_mineral_coal.png"},
 	groups = {cracky = 3},
-	drop = 'default:coal_lump',
+	drop = "default:coal_lump",
 	sounds = default.node_sound_stone_defaults(),
 })
 
@@ -66,7 +66,7 @@ minetest.register_node("cratermg:stone_with_copper", {
 	description = "Copper Ore",
 	tiles = {"default_stone.png^[colorize:#F408^default_mineral_copper.png"},
 	groups = {cracky = 2},
-	drop = 'default:copper_lump',
+	drop = "default:copper_lump",
 	sounds = default.node_sound_stone_defaults(),
 })
 
@@ -114,33 +114,32 @@ cratermg.materials.dust        = minetest.get_content_id("cratermg:dust")
 -- Ores registration
 --------------------
 
-
 cratermg.register_ore({
-	noise = {scale = 1, octaves = 4, persist = 0.7, offset = -1.3},
-	ore = 'cratermg:stone_with_mese', spawns_in = 'cratermg:stone'
+	noise = {scale = 1, octaves = 3, persist = 1, offset = -1.3},
+	ore = "cratermg:stone_with_mese", spawns_in = "cratermg:stone"
 })
 
 cratermg.register_ore({
-	noise = {scale = 1, octaves = 4, persist = 0.7, offset = -1.3},
-	ore = 'cratermg:stone_with_diamond', spawns_in = 'cratermg:stone'
+	noise = {scale = 1, octaves = 3, persist = 1, offset = -1.3},
+	ore = "cratermg:stone_with_diamond", spawns_in = "cratermg:stone"
 })
 
 cratermg.register_ore({
-	noise = {scale = 0.1, octaves = 2, persist = 0.7},
-	ore = 'cratermg:stone_with_iron', spawns_in = 'cratermg:stone'
+	noise = {scale = 1, octaves = 1, persist = 1 },
+	ore = "cratermg:stone_with_iron", spawns_in = "cratermg:stone"
 })
 
 cratermg.register_ore({
-	noise = {scale = 0.05, octaves = 2, persist = 0.7},
-	ore = 'cratermg:stone_with_copper', spawns_in = 'cratermg:stone'
+	noise = {scale = 1, octaves = 1, persist = 1, offset = -0.1},
+	ore = "cratermg:stone_with_copper", spawns_in = "cratermg:stone"
 })
 
 cratermg.register_ore({
-	noise = {scale = 0.05, octaves = 2, persist = 0.7},
-	ore = 'cratermg:stone_with_tin', spawns_in = 'cratermg:stone'
+	noise = {scale = 1, octaves = 2, persist = 1, offset = -1},
+	ore = "cratermg:stone_with_tin", spawns_in = "cratermg:stone"
 })
 
 cratermg.register_ore({
-	noise = {scale = 0.2, octaves = 1},
-	ore = 'cratermg:stone_with_coal', spawns_in = 'cratermg:stone'
+	noise = {scale = 2, octaves = 2, persist = 1, offset = -1.5},
+	ore = "cratermg:stone_with_coal", spawns_in = "cratermg:stone"
 })

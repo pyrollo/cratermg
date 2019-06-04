@@ -394,7 +394,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 				else
 					mapdata[vmiy] = c.vacuum
 				end
-                vmiy = vmiy + yinc
+				vmiy = vmiy + yinc
 			end
 			p.stop('base generation')
 
@@ -406,8 +406,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 				if crater.maxp.x >= x and crater.minp.x <= x and
 				   crater.maxp.z >= z and crater.minp.z <= z
 				then
-					local d2 = (x-crater.x)*(x-crater.x)
-						+(z-crater.z)*(z-crater.z)
+					local d2 = (x-crater.x)*(x-crater.x) +
+						(z-crater.z)*(z-crater.z)
 
 					if d2 <= crater.totalR2 then
 						ground_level, min_level, max_level,
@@ -452,10 +452,8 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 			n3dy = n3dx
 			for y = minp.y, maxp.y do
 				local proba = cracksizemap[n3dy] * (1000 - y + cratermg.surface) / 1000
-				if math.abs(crack1map[n3dy]) < proba
-				or math.abs(crack2map[n3dy]) < proba
--- debug for testing
-or x>=0
+				if math.abs(crack1map[n3dy]) < proba or
+					math.abs(crack2map[n3dy]) < proba
 				then
 					mapdata[vmiy] = c.vacuum
 				end
@@ -487,8 +485,7 @@ or x>=0
 	vm:write_to_map()
 	p.stop('save')
 	p.stop('total')
-print("===")
-	p.show()
+--	p.show()
 --	print("generation "..(minetest.pos_to_string(minp)).." - "..(minetest.pos_to_string(maxp))..
 --	" took ".. string.format("%.2fms", (os.clock() - tstart) * 1000))
 end)

@@ -1,6 +1,24 @@
+--[[
+	Crater MG - Crater Map Generator for Minetest
+	(c) Pierre-Yves Rollo
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Lesser General Public License as published
+	by the Free Software Foundation, either version 2.1 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--]]
+
 local ores = {}
 
-local nscale = 16
+local nscale = 8
 
 -- Simplification of math.fuctions call
 local floor, random = math.floor, math.random
@@ -39,9 +57,25 @@ function cratermg.register_ore(def)
 	ores[#ores+1] = def
 end
 
+local nores, spawns_in, ore, nmap
+
+local function pre_generate()
+	if nores then return end
+	nores = #ores
+	spawns_in = {}
+	ore = {}
+	nmap = {}
+	for index = 1, nores do
+		spawns_in[index] = ores[index].c_spawns_in
+		ore[index] = ores[index].c_ore
+		nmap[index] = ores[index].nmap
+	end
+end
+
 function cratermg.ore_generate(minp, maxp, mapdata, area, p)
+	pre_generate()
+
 	local p = cratermg.profile
-	local nores = #ores
 
 	local nlens3d = {
 		x=ncoord(maxp.x) - ncoord(minp.x) + 1,
@@ -70,10 +104,9 @@ function cratermg.ore_generate(minp, maxp, mapdata, area, p)
 				local nix = ncoord(x-minp.x) + nixy + 1
 				local cid = mapdata[vmi]
 				for index = 1, nores do
-					local ore = ores[index]
-					if ore.c_spawns_in == cid and
-							random() < ore.nmap[nix] then
-						mapdata[vmi] = ore.c_ore
+					if spawns_in[index] == cid and
+							random() < nmap[index][nix] then
+						mapdata[vmi] = ore[index]
 						break
 					end
 				end
