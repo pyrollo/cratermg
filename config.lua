@@ -29,18 +29,6 @@ cratermg.chamge_ambiance = true
 -- Mean surface level
 cratermg.surface = 0
 
--- Materials
-------------
-
-cratermg.materials.vacuum      = minetest.get_content_id("air")
-cratermg.materials.hills       = minetest.get_content_id("default:stone")
-cratermg.materials.mare        = minetest.get_content_id("default:stone")
-cratermg.materials.crater_edge = minetest.get_content_id("default:cobble")
-cratermg.materials.crater_fill = minetest.get_content_id("default:cobble")
-cratermg.materials.dust        = minetest.get_content_id("default:sand")
-
---cratermg.materials.dust = minetest.get_content_id("default:glass")
-
 -- Levels
 ---------
 
@@ -88,7 +76,6 @@ cratermg.noises.cracksize = {
     offset = 0,	scale = 0.02, seed = 1342, octaves = 1, persist = 0.5,
 }
 
-
 -- Craters
 ----------
 
@@ -109,13 +96,3 @@ cratermg.probacurve = {
 
 cratermg.fill_age = 10 -- Fill age factor (greater = more filled craters)
 cratermg.wipe_age = 20 -- Wipe age factor (greater = more wiped craters)
-
--- Minerals in crater bottom
-cratermg.minerals = {
---	{ chance = 10, mineral = nil },
-	{ chance = 1, mineral = "default:mese" },
-	{ chance = 1, mineral = "default:goldblock" },
-	{ chance = 1, mineral = "default:obsidian" },
-	{ chance = 1, mineral = "default:diamondblock" },
-	{ chance = 1, mineral = "default:steelblock" },
-}

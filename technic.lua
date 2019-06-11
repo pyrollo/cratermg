@@ -67,6 +67,45 @@ minetest.register_node("cratermg:stone_with_sulfur", {
 	drop = "technic:sulfur_lump",
 })
 
+-- Debris nodes registration
+----------------------------
+
+minetest.register_node("cratermg:sediment_with_uranium", {
+	description = "Uranium Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^technic_mineral_uranium.png"},
+	is_ground_content = true,
+	groups = {cracky=3, radioactive=1},
+	sounds = default.node_sound_stone_defaults(),
+	drop = "technic:uranium_lump",
+})
+
+minetest.register_node("cratermg:sediment_with_chromium", {
+	description = "Chromium Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^technic_mineral_chromium.png"},
+	is_ground_content = true,
+	groups = {cracky=3},
+	sounds = default.node_sound_stone_defaults(),
+	drop = "technic:chromium_lump",
+})
+
+minetest.register_node("cratermg:sediment_with_zinc", {
+	description = "Zinc Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^technic_mineral_zinc.png"},
+	is_ground_content = true,
+	groups = {cracky=3},
+	sounds = default.node_sound_stone_defaults(),
+	drop = "technic:zinc_lump",
+})
+
+minetest.register_node("cratermg:sediment_with_lead", {
+	description = "Lead Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^technic_mineral_lead.png"},
+	is_ground_content = true,
+	groups = {cracky=3},
+	sounds = default.node_sound_stone_defaults(),
+	drop = "technic:lead_lump",
+})
+
 -- Ores registration
 --------------------
 
@@ -95,4 +134,27 @@ cratermg.register_ore({
 	noise = {scale = 1, octaves = 2, persist = 1, offset = -1,
 		spread = {x=256, y=1024, z=256}},
 	ore = "cratermg:stone_with_sulfur", spawns_in = "cratermg:stone"
+})
+
+-- Debris registration
+----------------------
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_uranium",
+	chance = 3,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_chromium",
+	chance = 3,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_zinc",
+	chance = 1,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_lead",
+	chance = 2,
 })

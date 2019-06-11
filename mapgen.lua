@@ -16,14 +16,18 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local mod = _G[minetest.get_current_modname()]
+local debris = {}
+local debristotalchance = 0
 
-local mineralstotalchance = 0
-for _, mineral in ipairs(cratermg.minerals) do
-	mineralstotalchance = mineralstotalchance + mineral.chance
-	if mineral.mineral then
-		mineral.cid = minetest.get_content_id(mineral.mineral)
+function cratermg.register_debris(def)
+	if not def.chance or def.chance < 0 then
+		return
 	end
+	local def = table.copy(def)
+	def.cid = minetest.get_content_id(def.name)
+	debristotalchance = debristotalchance + def.chance
+
+	debris[#debris + 1] = def
 end
 
 -- Simplification of math.fuctions call
@@ -46,7 +50,7 @@ minetest.register_on_mapgen_init(function(mapgen_params)
 )
 
 -- Caclulate noise amplitude once for all
-local small_noise_amplitude = mod.get_noise_amplitude(cratermg.noises.small)
+local small_noise_amplitude = cratermg.get_noise_amplitude(cratermg.noises.small)
 
 -- Undersample scale for hills noise
 local us_scale = 16
@@ -131,10 +135,10 @@ local function compute_crater_deformation(crater, smallmap, ground_level, d2)
 		local min_level = ground_level
 		local max_level = ground_level
 
-		local fill_level, remains_level
+		local fill_level, debris_level
 
 		-- Heights and levels
-		local remains_curve = get_peak_curve(d2, crater.holeR2, 20)
+		local debris_curve = get_peak_curve(d2, crater.holeR2, 20)
 		local edge_height = get_peak_curve(d2, crater.totalR2, 5)
 			* crater.edge_mult * (smallmap / small_noise_amplitude + 1)
 
@@ -155,23 +159,23 @@ local function compute_crater_deformation(crater, smallmap, ground_level, d2)
 
 		-- Fill hole
 		if d2 < crater.holeR2 then
-			-- Add remains zone
-			remains_level = ground_level + min(fill_height,
-				floor(remains_curve*crater.depth/5 + random()))
+			-- Add debris zone
+			debris_level = ground_level + min(fill_height,
+				floor(debris_curve*crater.depth/5 + random()))
 
 			-- Fill
 			fill_level = ground_level + fill_height
 
-			ground_level = max(remains_level, fill_level)
+			ground_level = max(debris_level, fill_level)
 			max_level = max(max_level, ground_level)
 
 		else
 			fill_level = ground_level
-			remains_level = ground_level
+			debris_level = ground_level
 		end
 
 		return ground_level, min_level, max_level,
-		       edge_level, remains_level, fill_level
+		       edge_level, debris_level, fill_level
 	end
 end
 
@@ -222,15 +226,15 @@ local function get_craters_list(minp, maxp)
 							age = math.sqrt(radius) * (random()*0.7 + 0.3),
 						}
 
-						-- Chose a mineral type for this crater
-						local mineralchance = random(mineralstotalchance)
+						-- Chose a debris type for this crater
+						local chance = random(debristotalchance)
 						--TODO:Improve ugly code
-						for _, mineral in ipairs(cratermg.minerals) do
-							if mineralchance > 0 then
-								mineralchance = mineralchance - mineral.chance
-								if mineralchance <= 0 then
-									crater.mineral = {
-										cid = mineral.cid,
+						for _, deb in ipairs(debris) do
+							if chance > 0 then
+								chance = chance - deb.chance
+								if chance <= 0 and deb.cid then
+									crater.debris = {
+										cid = deb.cid,
 										basechance = crater.depth * crater.depth / 500,
 									 }
 								 end
@@ -400,7 +404,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 			-- Crater generation
 			p.start('crater generation')
-			local min_level, max_level, edge_level, remains_level, fill_level
+			local min_level, max_level, edge_level, debris_level, fill_level
 
 			for _, crater in pairs(craters) do
 				if crater.maxp.x >= x and crater.minp.x <= x and
@@ -411,7 +415,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 
 					if d2 <= crater.totalR2 then
 						ground_level, min_level, max_level,
-						edge_level, remains_level, fill_level
+						edge_level, debris_level, fill_level
 							= compute_crater_deformation(
 								crater, smallmap[n2d], ground_level, d2)
 						-- Y loop (mare height added to all to introduce some noise)
@@ -423,9 +427,9 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 							for y = min_level, max_level do
 								if y < floor(edge_level) then
 									mapdata[vmiy] = c.crater_edge
-								elseif y < floor(remains_level) then
-								-- TODO : MIX UP MINERALS
-									mapdata[vmiy] = crater.mineral.cid
+								elseif y < floor(debris_level) then
+									mapdata[vmiy] = crater.debris and
+											crater.debris.cid or c.crater_fill
 								elseif y < floor(fill_level) then
 									mapdata[vmiy] = c.crater_fill
 								else

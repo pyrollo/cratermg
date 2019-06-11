@@ -102,9 +102,62 @@ minetest.register_node("cratermg:stone_with_diamond", {
 	sounds = default.node_sound_stone_defaults(),
 })
 
+-- Mineral nodes registration
+-----------------------------
+
+minetest.register_node("cratermg:sediment_with_iron", {
+	description = "Iron Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^default_mineral_iron.png"},
+	groups = {cracky = 2},
+	drop = "default:iron_lump",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:sediment_with_copper", {
+	description = "Copper Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^default_mineral_copper.png"},
+	groups = {cracky = 2},
+	drop = "default:copper_lump",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:sediment_with_tin", {
+	description = "Tin Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^default_mineral_tin.png"},
+	groups = {cracky = 2},
+	drop = "default:tin_lump",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:sediment_with_mese", {
+	description = "Mese Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^default_mineral_mese.png"},
+	groups = {cracky = 1},
+	drop = "default:mese_crystal",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:sediment_with_gold", {
+	description = "Gold Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^default_mineral_gold.png"},
+	groups = {cracky = 2},
+	drop = "default:gold_lump",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+minetest.register_node("cratermg:sediment_with_diamond", {
+	description = "Diamond Ore",
+	tiles = {"default_cobble.png^[colorize:#F408^default_mineral_diamond.png"},
+	groups = {cracky = 1},
+	drop = "default:diamond",
+	sounds = default.node_sound_stone_defaults(),
+})
+
+
 -- Override config
 ------------------
 
+cratermg.materials.vacuum      = minetest.get_content_id("air")
 cratermg.materials.hills       = minetest.get_content_id("cratermg:stone")
 cratermg.materials.mare        = minetest.get_content_id("cratermg:stone")
 cratermg.materials.crater_edge = minetest.get_content_id("cratermg:sediment")
@@ -125,12 +178,12 @@ cratermg.register_ore({
 })
 
 cratermg.register_ore({
-	noise = {scale = 1, octaves = 1, persist = 1 },
+	noise = {scale = 1, octaves = 1, persist = 1, offset = -0.3},
 	ore = "cratermg:stone_with_iron", spawns_in = "cratermg:stone"
 })
 
 cratermg.register_ore({
-	noise = {scale = 1, octaves = 1, persist = 1, offset = -0.1},
+	noise = {scale = 1, octaves = 1, persist = 1, offset = -0.4},
 	ore = "cratermg:stone_with_copper", spawns_in = "cratermg:stone"
 })
 
@@ -142,4 +195,43 @@ cratermg.register_ore({
 cratermg.register_ore({
 	noise = {scale = 2, octaves = 2, persist = 1, offset = -1.5},
 	ore = "cratermg:stone_with_coal", spawns_in = "cratermg:stone"
+})
+
+
+-- Debris registration
+----------------------
+
+cratermg.register_debris({
+	name = minetest.get_name_from_content_id(cratermg.materials.crater_fill),
+	chance = 20,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_copper",
+	chance = 1,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_iron",
+	chance = 5,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_tin",
+	chance = 1,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_mese",
+	chance = 1,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_diamond",
+	chance = 1,
+})
+
+cratermg.register_debris({
+	name = "cratermg:sediment_with_gold",
+	chance = 2,
 })
