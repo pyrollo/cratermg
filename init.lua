@@ -32,8 +32,8 @@ dofile(cratermg.path..'/oregen.lua')
 dofile(cratermg.path..'/mapgen.lua')
 
 if cratermg.use_cratermg_nodes then
+	dofile(cratermg.path..'/nodes.lua')
 	if minetest.get_modpath('technic_worldgen') then
-		dofile(cratermg.path..'/nodes.lua')
 		dofile(cratermg.path..'/technic.lua')
 	end
 else

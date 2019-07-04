@@ -478,7 +478,7 @@ minetest.register_on_generated(function (minp, maxp, blockseed)
 	p.stop('main loop')
 
 	p.start('oregen')
- 	cratermg.ore_generate(minp, maxp, mapdata, area, p)
+	cratermg.ore_generate(minp, maxp, mapdata, area, p)
 	p.stop('oregen')
 
 	-- Save to map
