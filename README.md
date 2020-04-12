@@ -1,12 +1,10 @@
-# CraterMG - Crater Map Generator for Minetest [EXPERIMENTAL]
+# CraterMG - Crater Map Generator for Minetest
 
 Map generator with hills and craters. The idea is to create a map generator for space mintest games.
 
-**Don't use this mod on any server!** It is in a very experimental stage of development.
-
 ![Presentation image of Crater MG](screenshot.png)
 
-**Version**: Alpha
+**Version**: 1.0
 
 **Dependancies**: default
 
@@ -24,8 +22,6 @@ To test Crater MG:
 
 And explore lunar landcape !
 
-## Remaining todo before beta
-  * Improve crater minerals (meteorite stones ?)
-  * Make ore nodes groups consistant with original minetest_game ones
+## Todos
   * Add planet stone based recipes (cook, grind, bricks, blocks)
   * Separate cobble and sediment (sediment could be like clay) ?
